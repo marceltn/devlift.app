@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DevLift - Train from the CLI</title>
+    <meta
+      name="description"
+      content="DevLift is a CLI-first gym tracker for lifters who want to log workouts, track progress, and stay consistent from the terminal."
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700;700&display=swap");
+
+      :root {
+        --bg: #07111f;
+        --bg-soft: #0e1b31;
+        --panel: rgba(10, 18, 33, 0.72);
+        --panel-border: rgba(140, 197, 255, 0.18);
+        --text: #eaf2ff;
+        --muted: #91a6c7;
+        --accent: #62f0c7;
+        --accent-2: #7aa7ff;
+        --accent-3: #ff7ad9;
+        --shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+        --radius: 28px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(122, 167, 255, 0.22), transparent 30%),
+          radial-gradient(circle at 80% 10%, rgba(98, 240, 199, 0.18), transparent 24%),
+          radial-gradient(circle at 20% 85%, rgba(255, 122, 217, 0.12), transparent 22%),
+          linear-gradient(180deg, #050a13 0%, var(--bg) 42%, #050a13 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 90%);
+        opacity: 0.45;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+        position: relative;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 8px 0 28px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background:
+          linear-gradient(135deg, rgba(98, 240, 199, 0.95), rgba(122, 167, 255, 0.95));
+        display: grid;
+        place-items: center;
+        box-shadow: 0 16px 30px rgba(98, 240, 199, 0.18);
+      }
+
+      .logo svg {
+        width: 23px;
+        height: 23px;
+      }
+
+      .nav-link {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+        gap: 28px;
+        align-items: center;
+        padding: 18px 0 40px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(98, 240, 199, 0.24);
+        background: rgba(8, 18, 31, 0.72);
+        color: #b7ffe9;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        width: fit-content;
+      }
+
+      .eyebrow-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 18px rgba(98, 240, 199, 0.75);
+      }
+
+      h1 {
+        margin: 18px 0 16px;
+        font-size: clamp(3rem, 8vw, 6.2rem);
+        line-height: 0.92;
+        letter-spacing: -0.06em;
+        max-width: 11ch;
+      }
+
+      .lede {
+        margin: 0;
+        max-width: 60ch;
+        color: var(--muted);
+        font-size: clamp(1.05rem, 2vw, 1.25rem);
+        line-height: 1.7;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 28px;
+        align-items: center;
+      }
+
+      .button {
+        appearance: none;
+        border: 0;
+        padding: 14px 18px;
+        border-radius: 999px;
+        color: #04111c;
+        background: linear-gradient(135deg, var(--accent), #94f8da);
+        font: inherit;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow: 0 18px 32px rgba(98, 240, 199, 0.18);
+        transition: transform 160ms ease, box-shadow 160ms ease;
+      }
+
+      .button:hover,
+      .button:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 38px rgba(98, 240, 199, 0.24);
+      }
+
+      .button.secondary {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: none;
+      }
+
+      .button.secondary:hover,
+      .button.secondary:focus-visible {
+        box-shadow: 0 18px 30px rgba(0, 0, 0, 0.22);
+      }
+
+      .hero-note {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .terminal {
+        position: relative;
+        border-radius: var(--radius);
+        padding: 18px;
+        border: 1px solid var(--panel-border);
+        background:
+          linear-gradient(180deg, rgba(19, 33, 55, 0.88), rgba(7, 13, 25, 0.94)),
+          var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .terminal::before {
+        content: "";
+        position: absolute;
+        inset: auto -35% -35% auto;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(98, 240, 199, 0.2), transparent 70%);
+        pointer-events: none;
+      }
+
+      .terminal-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .window-dots {
+        display: flex;
+        gap: 8px;
+      }
+
+      .window-dots span {
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+      }
+
+      .window-dots span:nth-child(1) {
+        background: #ff7a7a;
+      }
+
+      .window-dots span:nth-child(2) {
+        background: #ffd166;
+      }
+
+      .window-dots span:nth-child(3) {
+        background: #62f0c7;
+      }
+
+      .terminal-title {
+        color: #8da6d7;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.85rem;
+      }
+
+      .terminal-screen {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.92rem;
+        line-height: 1.75;
+        color: #d6e6ff;
+      }
+
+      .command {
+        color: #89a8e8;
+      }
+
+      .success {
+        color: #87f8d7;
+      }
+
+      .muted {
+        color: #8ba1c5;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .caret {
+        display: inline-block;
+        width: 8px;
+        height: 1.1em;
+        background: var(--accent);
+        vertical-align: -0.2em;
+        animation: blink 1.1s steps(2, start) infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .section {
+        padding: 18px 0 0;
+      }
+
+      .section h2 {
+        margin: 0 0 14px;
+        font-size: clamp(1.6rem, 3vw, 2.4rem);
+        letter-spacing: -0.04em;
+      }
+
+      .section-copy {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.7;
+        max-width: 58ch;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        border-radius: 22px;
+        padding: 20px;
+        background: rgba(9, 16, 29, 0.8);
+        border: 1px solid rgba(140, 197, 255, 0.14);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+      }
+
+      .card-kicker {
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--accent-2);
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .card h3 {
+        margin: 12px 0 8px;
+        font-size: 1.15rem;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .step {
+        border-radius: 22px;
+        padding: 20px;
+        background:
+          linear-gradient(180deg, rgba(122, 167, 255, 0.08), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(122, 167, 255, 0.14);
+      }
+
+      .step-number {
+        font-family: "IBM Plex Mono", monospace;
+        color: #b8d2ff;
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .step h3 {
+        margin: 12px 0 8px;
+        font-size: 1.1rem;
+      }
+
+      .step p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .cta {
+        margin-top: 18px;
+        padding: 24px;
+        border-radius: 28px;
+        background:
+          linear-gradient(135deg, rgba(98, 240, 199, 0.1), rgba(122, 167, 255, 0.08)),
+          rgba(8, 14, 26, 0.9);
+        border: 1px solid rgba(98, 240, 199, 0.16);
+        box-shadow: var(--shadow);
+      }
+
+      .cta-inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .cta h2 {
+        margin-bottom: 10px;
+      }
+
+      .cta p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .waitlist-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .waitlist-form input {
+        width: min(320px, 100%);
+        min-width: 240px;
+        padding: 14px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        font: inherit;
+        outline: none;
+      }
+
+      .waitlist-form input::placeholder {
+        color: rgba(234, 242, 255, 0.45);
+      }
+
+      .waitlist-form input:focus {
+        border-color: rgba(98, 240, 199, 0.5);
+        box-shadow: 0 0 0 4px rgba(98, 240, 199, 0.08);
+      }
+
+      .form-message {
+        min-height: 1.4em;
+        margin-top: 10px;
+        color: #b7ffe9;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.88rem;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 30px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .footer a {
+        color: inherit;
+      }
+
+      @media (max-width: 920px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .grid-3,
+        .steps,
+        .cta-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .waitlist-form {
+          justify-content: stretch;
+        }
+
+        .waitlist-form input,
+        .waitlist-form .button {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 20px, 1120px);
+          padding-top: 18px;
+        }
+
+        .nav {
+          padding-bottom: 18px;
+        }
+
+        h1 {
+          max-width: 100%;
+        }
+
+        .terminal,
+        .cta,
+        .card,
+        .step {
+          border-radius: 22px;
+        }
+
+        .footer {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="nav">
+        <a class="brand" href="#top" aria-label="DevLift home">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" role="presentation">
+              <path
+                d="M6 14.5V9.5M18 14.5V9.5M3.5 12H6M18 12H20.5M9 7.5V16.5M15 7.5V16.5M9 12H15"
+                stroke="#04111c"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <span>DevLift</span>
+        </a>
+        <a class="nav-link" href="#waitlist">Join waitlist</a>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div>
+            <div class="eyebrow">
+              <span class="eyebrow-dot" aria-hidden="true"></span>
+              CLI-first gym tracking
+            </div>
+            <h1>Train from the terminal.</h1>
+            <p class="lede">
+              DevLift turns workout logging into a command-line habit. Track sets,
+              watch progress, and keep your lifting data close to your keyboard.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#waitlist">Join waitlist</a>
+              <a class="button secondary" href="#how-it-works">See how it works</a>
+            </div>
+            <p class="hero-note">Built for lifters who think a good session deserves a better prompt.</p>
+          </div>
+
+          <aside class="terminal" aria-label="DevLift command line demo">
+            <div class="terminal-bar">
+              <div class="window-dots" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="terminal-title">devlift shell</div>
+            </div>
+            <div class="terminal-screen">
+              <div><span class="command">$</span> devlift login</div>
+              <div class="muted">connected to training log</div>
+              <br />
+              <div><span class="command">$</span> devlift lift add bench --sets 5 --reps 5 --weight 225</div>
+              <div class="success">saved: bench press +2.5 lb over last week</div>
+              <br />
+              <div><span class="command">$</span> devlift streak --week</div>
+              <div class="muted">4 workouts logged, 2 PRs queued, 1 rest day earned</div>
+              <br />
+              <div><span class="command">$</span> <span class="caret" aria-hidden="true"></span></div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="section" aria-labelledby="why">
+          <h2 id="why">Everything you need, nothing you do not.</h2>
+          <p class="section-copy">
+            DevLift keeps the workflow simple: type a command, log the work, and
+            move on with your session.
+          </p>
+          <div class="grid-3">
+            <article class="card">
+              <div class="card-kicker">Fast logging</div>
+              <h3>Record sets in seconds</h3>
+              <p>Use short commands instead of navigating through a maze of forms and tabs.</p>
+            </article>
+            <article class="card">
+              <div class="card-kicker">Clear progress</div>
+              <h3>See the lift history</h3>
+              <p>Keep every session in one place so the next PR is always obvious.</p>
+            </article>
+            <article class="card">
+              <div class="card-kicker">CLI habit</div>
+              <h3>Make tracking feel native</h3>
+              <p>Build a routine around the terminal and keep your gym data close to your workflow.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="how-it-works" aria-labelledby="how">
+          <h2 id="how">How it works</h2>
+          <p class="section-copy">
+            The flow is designed to stay lightweight from the first login to the
+            final rep.
+          </p>
+          <div class="steps">
+            <article class="step">
+              <div class="step-number">01</div>
+              <h3>Connect</h3>
+              <p>Sign in once, then keep your training history ready in the shell.</p>
+            </article>
+            <article class="step">
+              <div class="step-number">02</div>
+              <h3>Log</h3>
+              <p>Add workouts, sets, and weights with quick commands while you rest.</p>
+            </article>
+            <article class="step">
+              <div class="step-number">03</div>
+              <h3>Level up</h3>
+              <p>Watch your volume and PRs stack up without breaking your flow.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="waitlist" aria-labelledby="join">
+          <div class="cta">
+            <div class="cta-inner">
+              <div>
+                <h2 id="join">Join the waitlist</h2>
+                <p>
+                  Be first in line for the CLI-first gym tracker that makes logging
+                  feel like a power move.
+                </p>
+              </div>
+              <form class="waitlist-form" id="waitlist-form">
+                <label class="sr-only" for="email">Email address</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  autocomplete="email"
+                  required
+                />
+                <button class="button" type="submit">Join waitlist</button>
+              </form>
+            </div>
+            <div class="form-message" id="form-message" aria-live="polite"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>DevLift - gym tracking from the CLI.</span>
+        <a href="mailto:hello@devlift.app">hello@devlift.app</a>
+      </footer>
+    </div>
+
+    <script>
+      const form = document.getElementById("waitlist-form");
+      const message = document.getElementById("form-message");
+      const email = document.getElementById("email");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!email.value.trim()) {
+          message.textContent = "Enter your email to join the waitlist.";
+          email.focus();
+          return;
+        }
+
+        message.textContent = `You're on the waitlist, ${email.value.trim()}.`;
+        form.reset();
+      });
+    </script>
+  </body>
+</html>
