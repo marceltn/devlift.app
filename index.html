@@ -638,7 +638,12 @@
                   feel like a power move.
                 </p>
               </div>
-              <form class="waitlist-form" id="waitlist-form">
+              <form
+                class="waitlist-form"
+                id="waitlist-form"
+                data-waitlist-endpoint="https://formspree.io/f/YOUR_FORM_ID"
+                data-waitlist-recipient="hello@devlift.app"
+              >
                 <label class="sr-only" for="email">Email address</label>
                 <input
                   id="email"
@@ -662,23 +667,6 @@
       </footer>
     </div>
 
-    <script>
-      const form = document.getElementById("waitlist-form");
-      const message = document.getElementById("form-message");
-      const email = document.getElementById("email");
-
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-
-        if (!email.value.trim()) {
-          message.textContent = "Enter your email to join the waitlist.";
-          email.focus();
-          return;
-        }
-
-        message.textContent = `You're on the waitlist, ${email.value.trim()}.`;
-        form.reset();
-      });
-    </script>
+    <script type="module" src="./waitlist.js"></script>
   </body>
 </html>
